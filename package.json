@@ -1,0 +1,27 @@
+{
+  "name": "spforms",
+  "version": "1.0.0",
+  "description": "set of methods that automate SharePoint form development",
+  "main": "./src/index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Zerg00s/spforms.git"
+  },
+  "keywords": [
+    "angular",
+    "SharePoint",
+    "forms"
+  ],
+  "author": "Denis Molodtsov",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/Zerg00s/spforms/issues"
+  },
+  "homepage": "https://github.com/Zerg00s/spforms#readme",
+  "devDependencies": {
+    "gulp": "^3.9.1"
+  }
+}
