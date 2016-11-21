@@ -23,5 +23,13 @@
   "homepage": "https://github.com/Zerg00s/spforms#readme",
   "devDependencies": {
     "gulp": "^3.9.1"
+  },
+  "dependencies": {
+    "lodash.camelcase": "^4.3.0",
+    "csom-node":"*",
+    "apply":"*",
+    "deferred":"*",
+    "ncp":"*",
+    "sp-request":"*"
   }
 }
