@@ -182,7 +182,7 @@ spforms.init = function(settings) {
 
     //Copy scaffolding for the Angular forms.
     //Copy all files if not copied
-    _self.copyForms = function(copySettings){
+    _self.copyForms = function(copySettings) {
         ncp('./node_modules/spforms/src/Templates/App', copySettings.destinationFolder,{clobber:false}, function (err) {
             if (err) {
                 return console.error(err);
@@ -212,6 +212,8 @@ spforms.init = function(settings) {
                     });
                 }
             );
+
+            
         });
     }
 

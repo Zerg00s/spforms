@@ -1,6 +1,6 @@
 {
   "name": "spforms",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "set of methods that automate SharePoint form development",
   "main": "./src/index.js",
   "scripts": {
