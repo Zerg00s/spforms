@@ -182,18 +182,20 @@ spforms.init = function(settings) {
 
     //Copy scaffolding for the Angular forms.
     //Copy all files if not copied
-    _self.copyForms = function(copySettings) {
-        ncp('./node_modules/spforms/src/Templates/App', copySettings.destinationFolder,{clobber:false}, function (err) {
+    _self.copyForms = function(copySettings, callbackFunction) {
+        ncp('./node_modules/spforms/src/Templates/App', copySettings.destinationFolder + '/App', {clobber:false}, function (err) {
             if (err) {
                 return console.error(err);
             }
 
             var listFormFolderName = camelCase(copySettings.listTitle);
 
-            var listFormFolder = copySettings.destinationFolder + '/forms/' + listFormFolderName;
+            var listFormFolder = copySettings.destinationFolder + '/App/forms/' + listFormFolderName;
+
+            callbackFunction('App/forms/' +listFormFolderName + '/' +listFormFolderName+'Form.html');
 
             ncp(//Copy Folder:
-                copySettings.destinationFolder + '/forms/SampleForm', 
+                copySettings.destinationFolder + '/App/forms/SampleForm', 
                 listFormFolder,
                 { clobber:false },
                 _=>{ 
@@ -202,7 +204,7 @@ spforms.init = function(settings) {
                         files.forEach(file => {
                             let oldFilePath = listFormFolder +'/' + file;
                             let newFilePath = listFormFolder +'/' + file.replace('sample', listFormFolderName);
-                            fs.rename(oldFilePath, newFilePath,  _=>{
+                            fs.rename(oldFilePath, newFilePath,  _=> {
                                 let replacementSettings = copySettings;
                                 replacementSettings.file = newFilePath;
                                 _self.replaceTokensInFile(copySettings);   
