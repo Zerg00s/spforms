@@ -5,8 +5,21 @@ var csomapi = require('csom-node');
 var deferred = require('deferred');
 var ncp = require('ncp').ncp;
 var camelCase = require('lodash.camelcase');
+var html = require('html');
+var urljoin = require('url-join');
+var path = require('path');
 
 var spforms = spforms || {};
+
+String.prototype.format = function(placeholders) {
+    var s = this;
+    for(var propertyName in placeholders) {
+        var re = new RegExp('{' + propertyName + '}', 'gm');
+        s = s.replace(re, placeholders[propertyName]);
+    }    
+    return s;
+};
+
 
 spforms.init = function(settings) {
     var _self = {};
@@ -172,48 +185,125 @@ spforms.init = function(settings) {
     //Read SharePoint list metadata and generate JSON file based on it
     _self.generateAngularForm = function(listSettings){
         _self.getListFields(listSettings)
-        .then(function(){
+        .then(function(fields){
+           
             //TODO: generate JSON with all field types?
+
         })
         .catch(function(error){
             console.log(error);
         })
     }
+    _self.generateFields = function(fields){
+
+        let AngularStringTemplate = "<div class='col-md-4'><!--{DisplayName} | Type: {Type} --><h4>{{f.{Name}.FieldDisplayName}}</h4>{angularField}</div>";
+
+        let AngularNoteField     = "<textarea        name='{Name}' id='{Name}' ng-model='f.{Name}.Value'></textarea>";
+        let AngularTextField     = "<input           name='{Name}' id='{Name}' ng-model='f.{Name}.Value' type='text'  class='full-width' />";
+        let AngularNumberField   = "<input           name='{Name}' id='{Name}' ng-model='f.{Name}.Value' type='number' min='0' />";
+        let AngularTimeField     = "<input           name='{Name}' id='{Name}' ng-model='f.{Name}.Value' type='time'/>";
+        let AngularDateTimeField = "<datetime-picker name='{Name}' id='{Name}' ng-model='f.{Name}.Value' format='calendarFormat'  />";
+        let AngularBooleanField  = "<input           name='{Name}' id='{Name}' ng-model='f.{Name}.Value' type='checkbox' />";
+        let AngularUserField     = "<div             name='{Name}' id='{Name}' ng-model='f.{Name}.user' ui-people pp-is-multiuser='{{false}}' pp-width='220px' pp-account-type='User,DL,SecGroup,SPGroup'> </div>";
+        let AngularChoiceField   = "<choice-field    name='{Name}' id='{Name}' field='f.{Name}' class='choice-field'> </choice-field>";
+        let AngularRadioField    = "<radio-field     name='{Name}' id='{Name}' field='f.{Name}'></choice-field>";		
+        //TODO: AngularLookupField:
+
+         let AngularView = '';
+         for(var field in fields){
+             if(fields[field].ReadOnlyField == true){
+                 continue;
+             }
+             let angularField = '';
+             switch (fields[field].FieldType)
+             {
+                 case "Text":
+                    angularField = AngularTextField.format({Name: fields[field].FieldInternalName})
+                 break;
+                 case "Note":
+                     angularField = AngularNoteField.format({Name: fields[field].FieldInternalName})
+                 break;
+                 case "Number":
+                     angularField = AngularNumberField.format({Name: fields[field].FieldInternalName})
+                 break;
+                 case "Choice":
+                     angularField = AngularChoiceField.format({Name: fields[field].FieldInternalName})
+                 break;
+                 case "Radio":
+                     angularField = AngularRadioField.format({Name: fields[field].FieldInternalName})
+                 break;
+                 case "DateTime":
+                     angularField = AngularDateTimeField.format({Name: fields[field].FieldInternalName})
+                 break;
+                 case "Time":
+                     angularField = AngularTimeField.format({Name: fields[field].FieldInternalName})
+                 break;
+                 case "User":
+                     angularField = AngularUserField.format({Name: fields[field].FieldInternalName})
+                 break;
+                 case "Boolean":
+                     angularField = AngularBooleanField.format({Name: fields[field].FieldInternalName})
+                 break;
+                 //TODO: Lookup:
+
+             }
+
+             angularField = AngularStringTemplate.format(
+                 {
+                     DisplayName:fields[field].FieldDisplayName,
+                     Type:fields[field].FieldType, 
+                     Name:fields[field].FieldInternalName,
+                     angularField: angularField 
+                });
+
+            AngularView += html.prettyPrint(angularField);
+        }
+
+        return AngularView;
+    }
 
     //Copy scaffolding for the Angular forms.
     //Copy all files if not copied
     _self.copyForms = function(copySettings, callbackFunction) {
-        ncp('./node_modules/spforms/src/Templates/App', copySettings.destinationFolder + '/App', {clobber:false}, function (err) {
+        ncp('./node_modules/spforms/src/Templates/App', path.join(copySettings.destinationFolder, '/App'), {clobber:false}, function (err) {
             if (err) {
                 return console.error(err);
             }
 
             var listFormFolderName = camelCase(copySettings.listTitle);
 
-            var listFormFolder = copySettings.destinationFolder + '/App/forms/' + listFormFolderName;
+            var listFormFolder = path.join(copySettings.destinationFolder, 'App/forms',listFormFolderName);
 
-            callbackFunction('App/forms/' +listFormFolderName + '/' +listFormFolderName+'Form.html');
+            
 
             ncp(//Copy Folder:
-                copySettings.destinationFolder + '/App/forms/SampleForm', 
+                path.join(copySettings.destinationFolder, '/App/forms/SampleForm'), 
                 listFormFolder,
                 { clobber:false },
                 _=>{ 
                     //onFolderCopied:
                     fs.readdir(listFormFolder, (err, files) => {
                         files.forEach(file => {
-                            let oldFilePath = listFormFolder +'/' + file;
-                            let newFilePath = listFormFolder +'/' + file.replace('sample', listFormFolderName);
+                            let oldFilePath = path.join(listFormFolder, file);
+                            let newFilePath = path.join(listFormFolder, file.replace('sample', listFormFolderName));
                             fs.rename(oldFilePath, newFilePath,  _=> {
                                 let replacementSettings = copySettings;
                                 replacementSettings.file = newFilePath;
                                 _self.replaceTokensInFile(copySettings);   
+
+                                if(file.indexOf('Fields') != -1){
+                                    var listFormHtml = path.join('App/forms/',listFormFolderName, listFormFolderName +'Form.html');
+                                    var listFormFields = path.join('App/forms/',listFormFolderName, listFormFolderName +'Fields.html');
+                                    callbackFunction(listFormHtml, listFormFields);
+                                }
                             }
                             );
                         });
                     });
                 }
             );
+
+            
 
             
         });

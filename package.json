@@ -25,11 +25,13 @@
     "gulp": "^3.9.1"
   },
   "dependencies": {
+    "apply": "*",
+    "csom-node": "*",
+    "deferred": "*",
+    "html": "^1.0.0",
     "lodash.camelcase": "^4.3.0",
-    "csom-node":"*",
-    "apply":"*",
-    "deferred":"*",
-    "ncp":"*",
-    "sp-request":"*"
+    "ncp": "*",
+    "sp-request": "*",
+    "url-join": "^1.1.0"
   }
 }
