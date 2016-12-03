@@ -186,14 +186,27 @@ spforms.init = function(settings) {
     _self.generateAngularForm = function(listSettings){
         _self.getListFields(listSettings)
         .then(function(fields){
-           
-            //TODO: generate JSON with all field types?
+           var AngularView = _self.generateFields(fields);
+            console.log(AngularView);
+            //TODO: generate JSON with all field types like Ivan proposed?
+
+            _self.copyForms(listSettings, (generatedHtmlPath, fieldsFile) => {
+                var angularViewFilePath = path.join(listSettings.sourcePath, fieldsFile);
+                fs.writeFile(angularViewFilePath, AngularView, 'utf8', function (err) {
+                    if (err) return console.log(err);
+                });
+                
+                listSettings.contentLink = urljoin(listSettings.siteUrl, listSettings.assetsUrl, generatedHtmlPath);
+                _self.addCEWP2LitstForms(listSettings);
+            });
 
         })
         .catch(function(error){
             console.log(error);
         })
     }
+
+
     _self.generateFields = function(fields){
 
         let AngularStringTemplate = "<div class='col-md-4'><!--{DisplayName} | Type: {Type} --><h4>{{f.{Name}.FieldDisplayName}}</h4>{angularField}</div>";
@@ -265,19 +278,19 @@ spforms.init = function(settings) {
     //Copy scaffolding for the Angular forms.
     //Copy all files if not copied
     _self.copyForms = function(copySettings, callbackFunction) {
-        ncp('./node_modules/spforms/src/Templates/App', path.join(copySettings.destinationFolder, '/App'), {clobber:false}, function (err) {
+        ncp('./node_modules/spforms/src/Templates/App', path.join(copySettings.sourcePath, '/App'), {clobber:false}, function (err) {
             if (err) {
                 return console.error(err);
             }
 
             var listFormFolderName = camelCase(copySettings.listTitle);
 
-            var listFormFolder = path.join(copySettings.destinationFolder, 'App/forms',listFormFolderName);
+            var listFormFolder = path.join(copySettings.sourcePath, 'App/forms',listFormFolderName);
 
             
 
             ncp(//Copy Folder:
-                path.join(copySettings.destinationFolder, '/App/forms/SampleForm'), 
+                path.join(copySettings.sourcePath, '/App/forms/SampleForm'), 
                 listFormFolder,
                 { clobber:false },
                 _=>{ 
@@ -315,7 +328,7 @@ spforms.init = function(settings) {
         }
 
         var tokens2Replace = new Map(); 
-        tokens2Replace.set(/DEPLOYMENT_FOLDER/g, replacementSettings.deploymentFolder);
+        tokens2Replace.set(/DEPLOYMENT_FOLDER/g, replacementSettings.assetsUrl);
         tokens2Replace.set(/LIST_TITLE/g, replacementSettings.listTitle);
         tokens2Replace.set(/LIST_NAME/g, camelCase(replacementSettings.listTitle));    
         
@@ -332,8 +345,6 @@ spforms.init = function(settings) {
 
     return _self;
 }
-
-
 
 
 module.exports = spforms.init;
