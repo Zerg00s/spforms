@@ -187,7 +187,7 @@ spforms.init = function(settings) {
         _self.getListFields(listSettings)
         .then(function(fields){
            var AngularView = _self.generateFields(fields);
-            console.log(AngularView);
+            //console.log(AngularView);
             //TODO: generate JSON with all field types like Ivan proposed?
 
             _self.copyForms(listSettings, (generatedHtmlPath, fieldsFile) => {
@@ -205,7 +205,6 @@ spforms.init = function(settings) {
             console.log(error);
         })
     }
-
 
     _self.generateFields = function(fields){
 
@@ -341,6 +340,51 @@ spforms.init = function(settings) {
         });
 
         fs.writeFileSync(epta, data, 'utf8');
+    }
+
+    //Get SP Lists
+    _self.getLists = function(siteSettings){
+        var credentialOptions = {
+            'username': _self.settings.username,
+            'password': _self.settings.password,
+        };
+        
+        var spr = require('sp-request').create(credentialOptions);
+
+        var listsUrl = siteSettings.siteUrl +
+         "/_api/Web/Lists"+
+         "?$filter=IsCatalog eq false" +
+         " and Hidden eq false"+
+         " and BaseType ne 1" // <-- excludes Libraries 
+         "&$select=Title"
+         ;
+        
+        return spr.get(listsUrl)
+        .then(function (response) {
+            var expludedLists = [
+                'Content and Structure Reports',
+                'Form Templates',
+                'MicroFeed',
+                'Reusable Content',
+                'Site Collection Documents',
+                'Site Collection Images',
+                'Site Pages',
+                'Pages',
+                'Workflow Tasks'
+                ]; 
+            var lists = [];
+            var results = response.body.d.results;
+            for (var x = 0; x < results.length; x++) {
+                if(expludedLists.indexOf(results[x].Title) == -1){
+                    lists.push(results[x].Title);
+                }
+            }
+            //returning data to the promise
+            return lists;
+        })
+        .catch(function(err){
+            console.log(err);
+        });
     }
 
     return _self;
