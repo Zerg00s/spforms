@@ -7,7 +7,6 @@ var ncp = require('ncp').ncp;
 var camelCase = require('lodash.camelcase');
 var html = require('html');
 var urljoin = require('url-join');
-var path = require('path');
 
 var spforms = spforms || {};
 
@@ -286,8 +285,6 @@ spforms.init = function(settings) {
 
             var listFormFolder = path.join(copySettings.sourcePath, 'App/forms',listFormFolderName);
 
-            
-
             ncp(//Copy Folder:
                 path.join(copySettings.sourcePath, '/App/forms/SampleForm'), 
                 listFormFolder,
@@ -330,6 +327,7 @@ spforms.init = function(settings) {
         tokens2Replace.set(/DEPLOYMENT_FOLDER/g, replacementSettings.assetsUrl);
         tokens2Replace.set(/LIST_TITLE/g, replacementSettings.listTitle);
         tokens2Replace.set(/LIST_NAME/g, camelCase(replacementSettings.listTitle));    
+        tokens2Replace.set(/ParentItemID/g, camelCase(replacementSettings.listTitle));
         
         var epta = replacementSettings.file;
 
@@ -356,8 +354,7 @@ spforms.init = function(settings) {
          "?$filter=IsCatalog eq false" +
          " and Hidden eq false"+
          " and BaseType ne 1" // <-- excludes Libraries 
-         "&$select=Title"
-         ;
+         "&$select=Title";
         
         return spr.get(listsUrl)
         .then(function (response) {
@@ -387,8 +384,118 @@ spforms.init = function(settings) {
         });
     }
 
+    _self.checkIfAttachmentsExist = function(siteSettings){
+        var credentialOptions = {
+            'username': _self.settings.username,
+            'password': _self.settings.password,
+        };
+        
+        var spr = require('sp-request').create(credentialOptions);
+        var listsUrl = siteSettings.siteUrl + "/_api/Web/Lists/Attachments";
+        
+        return spr.get(listsUrl)
+        .then(function (response) {
+            var results = response.body.d.results;
+            //returning data to the promise:
+            return true;
+        })
+        .catch(function(err){
+            console.log(err);
+        });
+    }
+
+    _self.getListId = function(siteSettings, listSettings){
+        var credentialOptions = {
+            'username': _self.settings.username,
+            'password': _self.settings.password,
+        };
+         var spr = require('sp-request').create(credentialOptions);
+         return spr.requestDigest(siteSettings.siteUrl)
+        .then(function (digest) {
+            var listIdUrl = urljoin(siteSettings.siteUrl,  "/_api/web/lists/getbytitle('"+listSettings.listTitle+"')?$select=Id");
+            
+            return spr.get(listIdUrl).then(function(response){
+                listSettings.listId = response.body.d.Id;
+                return listSettings;
+            });
+        });
+    }
+
+    _self.addAttachmentField = function(siteSettings, listSettings){
+        var credentialOptions = {
+            'username': _self.settings.username,
+            'password': _self.settings.password,
+        };
+        
+        var spr = require('sp-request').create(credentialOptions);
+         return spr.requestDigest(siteSettings.siteUrl)
+        .then(function (digest) {
+            return spr.post(siteSettings.siteUrl + "/_api/Web/Lists/Attachments/fields/addfield", 
+            {
+                body: { 
+                    'parameters':{
+                        '__metadata': { 'type': 'SP.FieldCreationInformation' }, 
+                        'FieldTypeKind': 7, 
+                        'Title': camelCase(replacementSettings.listTitle),
+                        'LookupFieldName':'Title',//TODO: It's safer to use ID than TItle
+                        'LookupListId': listSettings.listId 
+                        //TODO: add cascading delete
+                    }
+                },
+                headers: {
+                    'X-RequestDigest': digest
+                }
+            });
+        });
+    }
+
+    _self.createList = function(siteSettings, listSettings){
+
+        var credentialOptions = {
+            'username': _self.settings.username,
+            'password': _self.settings.password,
+        };
+        
+        var spr = require('sp-request').create(credentialOptions);
+
+        return spr.requestDigest(siteSettings.siteUrl)
+        .then(function (digest) {
+            return spr.post(siteSettings.siteUrl + "/_api/Web/Lists", 
+                {
+                    body: { 
+                        '__metadata': { 'type': 'SP.List' }, 
+                        'AllowContentTypes': true,
+                        'BaseTemplate': 101,
+                        'ContentTypesEnabled': false,
+                        'Description': '',
+                        'Title': 'Attachments'
+                    },
+                    headers: {
+                        'X-RequestDigest': digest
+                    }
+                });
+
+        })
+        .then(function (response) {
+            if (response.statusCode === 204) {
+                console.log('Attachments created!');
+            }
+        }, function (err) {
+            if (err.statusCode === 500) {
+                console.log('Attachments Library already exists');
+            } else {
+                console.log(err);
+            }
+        }) 
+        .then(_=>{
+            return _self.getListId(siteSettings, listSettings);
+        }) 
+        .then(function(listSettings){
+            return _self.addAttachmentField(siteSettings, listSettings);
+        });
+    }
+
     return _self;
 }
-
 
 module.exports = spforms.init;

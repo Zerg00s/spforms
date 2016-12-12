@@ -22,7 +22,10 @@
             
                 <div data-ng-include="'../../DEPLOYMENT_FOLDER/App/Forms/LIST_NAME/LIST_NAMEFields.html?ver=9'" > </div>
 
-                <div class="col-md-12"><h4>Attachments</h4><file-uploader control-id="'RoomDetailsUploader'" show-display-name-field="false" /></div>
+                <div class="col-md-12">
+                    <h4>Attachments</h4>
+                    <file-uploader control-id="'attachments1'" show-display-name-field="false" attachment-filter-field-name="'ParentItemID'" />
+                </div>
             
                 <div class="row non-printable">
                     <div class="col-md-12">
