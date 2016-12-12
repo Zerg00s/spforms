@@ -436,10 +436,10 @@ spforms.init = function(settings) {
                     'parameters':{
                         '__metadata': { 'type': 'SP.FieldCreationInformation' }, 
                         'FieldTypeKind': 7, 
-                        'Title': camelCase(replacementSettings.listTitle),
-                        'LookupFieldName':'Title',//TODO: It's safer to use ID than TItle
-                        'LookupListId': listSettings.listId 
-                        //TODO: add cascading delete
+                        'Title': camelCase(listSettings.listTitle),
+                        'LookupFieldName':'ID',
+                        'LookupListId': listSettings.listId ,
+                        //'RelationshipDeleteBehavior':1 //CascadeDelete. This property does not exist in SP.FieldCreationInformation :(
                     }
                 },
                 headers: {
