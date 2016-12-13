@@ -349,12 +349,16 @@ spforms.init = function(settings) {
         
         var spr = require('sp-request').create(credentialOptions);
 
+        
+
         var listsUrl = siteSettings.siteUrl +
          "/_api/Web/Lists"+
          "?$filter=IsCatalog eq false" +
          " and Hidden eq false"+
          " and BaseType ne 1" // <-- excludes Libraries 
          "&$select=Title";
+
+         console.log(listsUrl);
         
         return spr.get(listsUrl)
         .then(function (response) {

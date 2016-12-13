@@ -319,6 +319,7 @@ app.factory('spFormFactory', function($location, $http, $log, $q, $rootScope) {
         if (spFormFactory.formMode == "New") return null;
 
         var folderUsed = (typeof(foldername) === "string" && foldername.length > 0);
+        folderUsed = true;
 
         var loadAttachmentsUrl = _spPageContextInfo.webServerRelativeUrl 
             + "/_api/web/lists/getbytitle('" + doclibname + "')/items"
